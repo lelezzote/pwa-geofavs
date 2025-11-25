@@ -1,48 +1,119 @@
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-        try {
-            let reg;
-            reg = await navigator.serviceWorker.register('/sw.js', { type: "module" });
 
-            console.log('Service worker registrada! 😎', reg);
-        } catch (err) {
-            console.log('😥 Service worker registro falhou: ', err);
-        }
-    });
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      let reg = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service worker registrado!', reg);
+    } catch (err) {
+      console.log('Falha no service worker:', err);
+    }
+  });
 }
 
-let posicaoInicial;//variavel para capturar a posicao
-const capturarLocalizacao = document.getElementById('localizacao');
+
+let db;
+
+const request = indexedDB.open("locaisFavoritosDB", 1);
+
+request.onupgradeneeded = function (event) {
+  db = event.target.result;
+
+  if (!db.objectStoreNames.contains("locais")) {
+    db.createObjectStore("locais", { keyPath: "id", autoIncrement: true });
+  }
+};
+
+request.onsuccess = function (event) {
+  db = event.target.result;
+  listarLocais();
+};
+
+request.onerror = function () {
+  console.log("Erro ao abrir IndexedDB");
+};
+
+
+const btnLocalizacao = document.getElementById('localizacao');
 const latitude = document.getElementById('latitude');
 const longitude = document.getElementById('longitude');
 const mapa = document.getElementById('gmap_canvas');
 
-const sucesso = (posicao) => {//callback de sucesso para captura da posicao
-    posicaoInicial = posicao;
-    latitude.innerHTML = posicaoInicial.coords.latitude;
-    longitude.innerHTML = posicaoInicial.coords.longitude;
-    mapa.src = "https://maps.google.com/maps?q=" + posicaoInicial.coords.latitude; + "," + posicaoInicial.coords.longitude; + "2880%20Broadway,%20New%20York&t=&z=13&ie=UTF8&iwloc=&output=embed" ;
-};
+btnLocalizacao.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    alert("Geolocalização não é suportada.");
+    return;
+  }
 
-const erro = (error) => {//callback de error (falha para captura de localizacao)
-    let errorMessage;
-    switch (error.code) {
-        case 0:
-            errorMessage = "Erro desconhecido"
-            break;
-        case 1:
-            errorMessage = "Permissão negada!"
-            break;
-        case 2:
-            errorMessage = "Captura de posição indisponível!"
-            break;
-        case 3:
-            errorMessage = "Tempo de solicitação excedido!"
-            break;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+
+      latitude.innerText = lat;
+      longitude.innerText = lon;
+
+      mapa.src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&ie=UTF8&iwloc=&output=embed`;
+    },
+    () => {
+      alert("Erro ao obter localização.");
     }
-    console.log('Ocorreu um erro: ' + errorMessage);
-};
-
-capturarLocalizacao.addEventListener('click', () => {
-    navigator.geolocation.getCurrentPosition(sucesso, erro);
+  );
 });
+
+
+document.getElementById("salvarLocal").addEventListener("click", () => {
+  const nome = document.getElementById("nomeLocal").value;
+  const lat = latitude.innerText;
+  const lon = longitude.innerText;
+
+  if (!nome || lat === "0.0") {
+    alert("Capture a localização e informe um nome!");
+    return;
+  }
+
+  const tx = db.transaction(["locais"], "readwrite");
+  const store = tx.objectStore("locais");
+
+  const local = {
+    nome: nome,
+    data: new Date().toLocaleString(),
+    latitude: lat,
+    longitude: lon,
+  };
+
+  store.add(local);
+
+  tx.oncomplete = () => {
+    listarLocais();
+    document.getElementById("nomeLocal").value = "";
+  };
+});
+
+function listarLocais() {
+  const lista = document.getElementById("listaLocais");
+  lista.innerHTML = "";
+
+  const tx = db.transaction(["locais"], "readonly");
+  const store = tx.objectStore("locais");
+
+  store.openCursor().onsuccess = function (event) {
+    const cursor = event.target.result;
+    if (cursor) {
+      const item = cursor.value;
+
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${item.nome}</strong><br>
+        📍 ${item.latitude}, ${item.longitude}<br>
+        🕒 ${item.data}
+      `;
+
+      lista.appendChild(li);
+
+      cursor.continue();
+    }
+  };
+}
+
+
+

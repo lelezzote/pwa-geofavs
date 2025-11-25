@@ -1,0 +1,52 @@
+body {
+    background-color: rgb(174, 174, 174);
+}
+
+.container {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 960px;
+    margin: 0 auto;
+    padding: 1em;
+}
+
+.titulo{
+    text-align: center;
+    color: rgb(73, 71, 158);
+    font-size: 2em;
+}
+
+.conteudo{
+    background-color: rgb(169, 164, 164);
+    margin: 1.5em 0;
+    box-shadow: 3px 3px 3px rgba(153, 154, 225, 0.3);
+    text-align: center;
+}
+
+.conteudoLocalizacao{
+    font-size: 1.5em;
+}
+
+.rodape{
+    text-align: center;
+    border-radius: 5%;
+}
+
+.cabecalhoConteudo{
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.botao{
+    background-color: rgba(69, 71, 163, 0.3);
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    width: 100%;
+}
